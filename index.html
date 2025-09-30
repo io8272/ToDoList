@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>📝 Check List 📝</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #e0eafc, #cfdef3);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      padding: 24px;
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 500;
+      color: #333;
+    }
+    .date-picker {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .date-picker label {
+      margin-right: 10px;
+      font-weight: 500;
+      color: #444;
+    }
+    #date-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #todo-list {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+    #todo-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .todo-item-left {
+      display: flex;
+      align-items: center;
+    }
+    .todo-item-left input[type="checkbox"] {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .todo-text {
+      transition: color .3s;
+    }
+    #todo-list li.completed .todo-text {
+      color: #888;
+      text-decoration: line-through;
+    }
+    #todo-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    #todo-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 16px;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover {
+      background-color: #357ab8;
+    }
+    #progress-box {
+      margin-bottom: 20px;
+    }
+    #progress-text {
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    #progress-bar-container {
+      background-color: #eee;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: #4a90e2;
+      transition: width 0.3s ease;
+    }
+
+    #fireworks-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2000;
+      display: none;
+    }
+
+    #congrats {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      background-color: #f9b115;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      z-index: 1500;
+      animation: fadeInOut 2s ease-in-out;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    #confirm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #confirm-modal .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 6px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 320px;
+    }
+    #confirm-modal .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    #confirm-modal .modal-buttons button {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Check List 📝</h1>
+    <div class="date-picker">
+      <label for="date-input">날짜:</label>
+      <input type="text" id="date-input" />
+    </div>
+    <div id="congrats">🎉 축하합니다! 🎉</div>
+    <ul id="todo-list"></ul>
+    <div id="progress-box">
+      <div id="progress-text">완료율: 0%</div>
+      <div id="progress-bar-container">
+        <div id="progress-bar"></div>
+      </div>
+    </div>
+    <form id="todo-form">
+      <input type="text" id="todo-input" placeholder="입력" required />
+      <button type="submit">추가</button>
+    </form>
+    <canvas id="fireworks-canvas"></canvas>
+  </div>
+
+  <div id="confirm-modal">
+    <div class="modal-content">
+      <p id="confirm-message">삭제하시겠습니까?</p>
+      <div class="modal-buttons">
+        <button id="confirm-yes">삭제</button>
+        <button id="confirm-no">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.10.3/dist/fireworks.js"></script>
+  <script>
+    const listEl = document.getElementById('todo-list');
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+    const modal = document.getElementById('confirm-modal');
+    const confirmYes = document.getElementById('confirm-yes');
+    const confirmNo = document.getElementById('confirm-no');
+    const dateInput = document.getElementById('date-input');
+    const congrats = document.getElementById('congrats');
+    const canvas = document.getElementById('fireworks-canvas');
+    let onConfirm = null;
+    let confirmed = false;
+    const shownCongrats = new Set();
+    let selectedDate = new Date().toISOString().split('T')[0];
+
+    flatpickr(dateInput, {
+      defaultDate: selectedDate,
+      dateFormat: "Y-m-d",
+      onChange: ([date], dateStr) => {
+        selectedDate = dateStr;
+        loadTodos(dateStr);
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (modal.style.display === 'flex') {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (!confirmed && onConfirm) {
+            confirmed = true;
+            modal.style.display = 'none';
+            onConfirm();
+          }
+        } else if (e.key === 'Escape') {
+          modal.style.display = 'none';
+        }
+      }
+    });
+
+    confirmYes.onclick = () => {
+      if (!confirmed && onConfirm) {
+        confirmed = true;
+        modal.style.display = 'none';
+        onConfirm();
+      }
+    };
+    confirmNo.onclick = () => modal.style.display = 'none';
+
+    form.onsubmit = e => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      fetch('http://localhost:3001/todos', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ text, date: selectedDate })
+      })
+      .then(r => r.json())
+      .then(() => {
+        input.value = '';
+        loadTodos(selectedDate);
+      });
+    };
+
+    function loadTodos(date) {
+      fetch(`http://localhost:3001/todos/${date}`)
+        .then(r => r.json())
+        .then(todos => {
+          listEl.innerHTML = '';
+          todos.forEach(todo => {
+            const li = document.createElement('li');
+            const left = document.createElement('div');
+            left.className = 'todo-item-left';
+
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.checked = todo.completed;
+            chk.onchange = () => {
+              li.classList.toggle('completed');
+              fetch(`http://localhost:3001/todos/${todo.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: chk.checked })
+              }).then(updateProgressBar);
+            };
+
+            const span = document.createElement('span');
+            span.className = 'todo-text';
+            span.textContent = todo.text;
+
+            const btn = document.createElement('button');
+            btn.textContent = '삭제';
+            btn.onclick = () => {
+              confirmed = false;
+              showConfirm(() => {
+                fetch(`http://localhost:3001/todos/${todo.id}`, { method: 'DELETE' })
+                  .then(() => loadTodos(selectedDate));
+              });
+            };
+
+            left.appendChild(chk);
+            left.appendChild(span);
+            li.appendChild(left);
+            li.appendChild(btn);
+            if (todo.completed) li.classList.add('completed');
+            listEl.appendChild(li);
+          });
+          updateProgressBar();
+        });
+    }
+
+    function showConfirm(onYes) {
+      modal.style.display = 'flex';
+      onConfirm = onYes;
+    }
+
+    function updateProgressBar() {
+      const items = listEl.querySelectorAll('li');
+      const total = items.length;
+      const completed = [...items].filter(li => li.classList.contains('completed')).length;
+      const percent = total ? Math.round((completed / total) * 100) : 0;
+
+      document.getElementById('progress-text').textContent = `완료율: ${percent}%`;
+      document.getElementById('progress-bar').style.width = `${percent}%`;
+
+      if (percent === 100 && !shownCongrats.has(selectedDate)) {
+        shownCongrats.add(selectedDate);
+        congrats.style.display = 'block';
+        setTimeout(() => congrats.style.display = 'none', 2000);
+
+        const fireworks = new Fireworks(canvas, {
+          opacity: 0.7
+        });
+        canvas.style.display = 'block';
+        fireworks.start();
+        setTimeout(() => {
+          fireworks.stop();
+          canvas.style.display = 'none';
+        }, 3000); // 폭죽 애니메이션이 3초 동안 유지되도록 설정
+      }
+    }
+
+    loadTodos(selectedDate);
+  </script>
+</body>
+</html>
